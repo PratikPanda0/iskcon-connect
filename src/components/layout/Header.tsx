@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { User, LogOut, Shield, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import iskconLogo from '@/assets/iskcon-logo.png';
+import ACBSP from '@/assets/ACBSrila-Prabhupada.png';
 
 export const Header = () => {
   const { user, signOut, isAdmin, isMember } = useAuth();
@@ -25,7 +25,7 @@ export const Header = () => {
       <div className="container flex h-16 items-center justify-between px-4 md:px-8">
         <Link to="/" className="flex items-center gap-2 group">
           <img 
-            src={iskconLogo} 
+            src={ACBSP} 
             alt="ISKCON Logo" 
             className="h-10 w-10 transition-transform group-hover:scale-105"
           />
