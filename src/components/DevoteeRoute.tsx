@@ -1,12 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 
-interface ProtectedRouteProps {
+interface DevoteeRouteProps {
   children: React.ReactNode;
 }
 
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+export const DevoteeRoute = ({ children }: DevoteeRouteProps) => {
+  const { user, loading, hasProfile } = useAuth();
 
   if (loading) {
     return (
@@ -18,6 +18,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // User must create a profile to access protected pages
+  if (!hasProfile) {
+    return <Navigate to="/profile" replace />;
   }
 
   return <>{children}</>;

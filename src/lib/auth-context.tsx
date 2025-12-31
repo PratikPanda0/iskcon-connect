@@ -2,18 +2,25 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserRole = 'admin' | 'member' | 'viewer';
+// Role IDs from the roles table
+const ROLE_IDS = {
+  BASIC: 1,
+  DEVOTEE: 2,
+  ADMIN: 3,
+} as const;
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  userRole: UserRole | null;
+  roleId: number | null;
+  hasProfile: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAdmin: boolean;
-  isMember: boolean;
+  isDevotee: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,25 +29,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [roleId, setRoleId] = useState<number | null>(null);
+  const [hasProfile, setHasProfile] = useState(false);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
+        .from('profiles')
+        .select('role_id')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
+        console.error('Error fetching user profile:', error);
+        return { roleId: null, exists: false };
       }
 
-      return data?.role as UserRole | null;
+      return { 
+        roleId: data?.role_id as number | null, 
+        exists: !!data 
+      };
     } catch (error) {
-      console.error('Error fetching user role:', error);
-      return null;
+      console.error('Error fetching user profile:', error);
+      return { roleId: null, exists: false };
     }
   };
 
@@ -51,13 +62,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer role fetching to avoid deadlock
+        // Defer profile fetching to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
-            fetchUserRole(session.user.id).then(setUserRole);
+            fetchUserProfile(session.user.id).then(({ roleId, exists }) => {
+              setRoleId(roleId);
+              setHasProfile(exists);
+            });
           }, 0);
         } else {
-          setUserRole(null);
+          setRoleId(null);
+          setHasProfile(false);
         }
         
         setLoading(false);
@@ -70,7 +85,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRole(session.user.id).then(setUserRole);
+        fetchUserProfile(session.user.id).then(({ roleId, exists }) => {
+          setRoleId(roleId);
+          setHasProfile(exists);
+        });
       }
       
       setLoading(false);
@@ -107,11 +125,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setUserRole(null);
+    setRoleId(null);
+    setHasProfile(false);
   };
 
-  const isAdmin = userRole === 'admin';
-  const isMember = userRole === 'member' || userRole === 'admin';
+  const refreshProfile = async () => {
+    if (user) {
+      const { roleId, exists } = await fetchUserProfile(user.id);
+      setRoleId(roleId);
+      setHasProfile(exists);
+    }
+  };
+
+  const isAdmin = roleId === ROLE_IDS.ADMIN;
+  const isDevotee = roleId === ROLE_IDS.DEVOTEE || roleId === ROLE_IDS.ADMIN;
 
   return (
     <AuthContext.Provider
@@ -119,12 +146,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         loading,
-        userRole,
+        roleId,
+        hasProfile,
         signUp,
         signIn,
         signOut,
+        refreshProfile,
         isAdmin,
-        isMember,
+        isDevotee,
       }}
     >
       {children}

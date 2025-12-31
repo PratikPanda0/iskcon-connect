@@ -1,6 +1,14 @@
 import { MapPin, Mail, Phone, Globe, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+// Role IDs from the roles table
+const ROLE_IDS = {
+  BASIC: 1,
+  DEVOTEE: 2,
+  ADMIN: 3,
+} as const;
 
 interface SocialLinks {
   website?: string;
@@ -18,7 +26,8 @@ interface MemberCardProps {
   phone?: string;
   socialLinks?: SocialLinks;
   missionDescription?: string;
-  role?: 'admin' | 'member' | 'viewer';
+  roleId?: number;
+  avatarUrl?: string;
 }
 
 export const MemberCard = ({
@@ -29,37 +38,46 @@ export const MemberCard = ({
   phone,
   socialLinks,
   missionDescription,
-  role = 'member',
+  roleId = ROLE_IDS.DEVOTEE,
+  avatarUrl,
 }: MemberCardProps) => {
   const hasSocialLinks = socialLinks && Object.values(socialLinks).some(Boolean);
 
   const getRoleBadge = () => {
-    switch (role) {
-      case 'admin':
+    switch (roleId) {
+      case ROLE_IDS.ADMIN:
         return <Badge variant="default" className="bg-primary text-primary-foreground">Admin</Badge>;
-      case 'viewer':
-        return <Badge variant="outline" className="text-muted-foreground">Viewer</Badge>;
+      case ROLE_IDS.BASIC:
+        return <Badge variant="outline" className="text-muted-foreground">Basic</Badge>;
       default:
-        return <Badge variant="secondary" className="bg-saffron-light text-saffron-dark">Member</Badge>;
+        return <Badge variant="secondary" className="bg-saffron-light text-saffron-dark">Devotee</Badge>;
     }
   };
 
   return (
     <Card className="elevated-card group hover:scale-[1.02] transition-all duration-300">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-serif text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-              {name}
-            </h3>
+        <div className="flex items-start gap-3">
+          <Avatar className="h-12 w-12 shrink-0">
+            <AvatarImage src={avatarUrl} alt={name} />
+            <AvatarFallback className="text-sm font-medium">
+              {name.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-serif text-xl font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                {name}
+              </h3>
+              {getRoleBadge()}
+            </div>
             <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-              <MapPin className="h-4 w-4 text-primary/70" />
-              <span className="text-sm">
+              <MapPin className="h-4 w-4 text-primary/70 shrink-0" />
+              <span className="text-sm truncate">
                 {city}, {country}
               </span>
             </div>
           </div>
-          {getRoleBadge()}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

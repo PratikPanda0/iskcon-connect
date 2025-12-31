@@ -70,67 +70,78 @@ export type Database = {
       }
       profiles: {
         Row: {
-          city: string
+          agreed_to_terms_at: string | null
+          avatar_url: string | null
+          city: string | null
           country: string
           created_at: string
           email: string | null
           id: string
           is_public: boolean | null
           mission_description: string | null
-          name: string
+          name: string | null
           phone: string | null
+          role_id: number
           social_links: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          city: string
+          agreed_to_terms_at?: string | null
+          avatar_url?: string | null
+          city?: string | null
           country: string
           created_at?: string
           email?: string | null
           id?: string
           is_public?: boolean | null
           mission_description?: string | null
-          name: string
+          name?: string | null
           phone?: string | null
+          role_id?: number
           social_links?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          city?: string
+          agreed_to_terms_at?: string | null
+          avatar_url?: string | null
+          city?: string | null
           country?: string
           created_at?: string
           email?: string | null
           id?: string
           is_public?: boolean | null
           mission_description?: string | null
-          name?: string
+          name?: string | null
           phone?: string | null
+          role_id?: number
           social_links?: Json | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      user_roles: {
+      roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
+          id: number
+          name: string
         }
         Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
+          id?: number
+          name: string
         }
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
+          id?: number
+          name?: string
         }
         Relationships: []
       }
@@ -140,17 +151,13 @@ export type Database = {
     }
     Functions: {
       has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
+        Args: { _role_name: string; _user_id: string }
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       announcement_status: "pending" | "approved" | "rejected"
-      app_role: "admin" | "member" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -279,7 +286,6 @@ export const Constants = {
   public: {
     Enums: {
       announcement_status: ["pending", "approved", "rejected"],
-      app_role: ["admin", "member", "viewer"],
     },
   },
 } as const
